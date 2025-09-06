@@ -6,6 +6,7 @@ import dotenv
 import os
 import psycopg2
 from psycopg2.extras import execute_values
+from psycopg2 import sql
 
 from codeabode import Class, Curriculum
 
@@ -23,7 +24,7 @@ client = genai.Client(
 
 curcgpt_prompt = """
 ### Curriculum Agent System Prompt  
-**Role**: You are an expert 1:1 coding curriculum generator. Your job is to create hyper-personalized lesson plans that adapt to student progress while relentlessly connecting concepts to their unique final project goal.  
+**Role**: You are an expert 1:1 coding curriculum refiner. Your job is to create hyper-personalized lesson plans that adapt to student progress based on how well they did in their previous classwork and homework based on the student notes, while relentlessly connecting concepts to their unique final project goal.  
 
 ---
 
@@ -64,45 +65,34 @@ curcgpt_prompt = """
      "stretch_methods": ["list comprehensions (filter weapons by damage>5)"]
      ```
 
+5. **What to refine**
+    - If the notes said a certain class was skipped in favor of reviewing the homework, note that information for methods you have to teach
+    - If some parts were finished or you went ahead, you can change the pace of the curriculum. If the student learns slower exemplified by the previous class(es), then modify the future classes to adapt to their pace.
+
 ---
 
 ### ⚙️ Input/Output Format  
+
+```
 **Input**:  
-Occasionally a prompt with some information about the student, or JSON in this format:
-```json
-{
-  "current_level": "Python: if/else, print()",
-  "final_goal": "RPG civilization shooter",
-  "classes": [
-    {
-      "status": "completed",
-      "name": "variables",
-      "methods": ["int", "str", "print", "input"],
-      "relevance": "Explicit final-goal connection",
-      "stretch_methods?": ["non-core utilities"]
-    },
-    {
-      "status": "completed_assessment",
-      "name": "Your [Custom Project Name]",
-      "skills_tested": ["list", "of", "concepts"],
-      "description": "1-sentence challenge"
-    },
-    {
-      "status": "upcoming",
-      "name": "string (e.g., Lists)",
-      "methods": ["array", "specific", "methods"],
-      "relevance": "Explicit final-goal connection",
-      "stretch_methods?": ["non-core utilities"]
-    },
-    {
-      "status": "assessment",
-      "project": "Your [Custom Project Name]",
-      "skills_tested": ["list", "of", "concepts"],
-      "description": "1-sentence challenge",
-    }
-  ],
-  "future_concepts": [ ... ],
-}
+Age: [int]
+Student Level: [info about how advanced the student is] 
+Student Notes: [some information on 
+    special needs/accomodations for the student, interests, etc.]
+
+
+// for each class:
+===========================
+
+Class Name: [name of the class]
+Status: [status: is it an assessment or an upcoming class? did it already happen?]
+Relevance: [relevance of the class to the student's final goal]
+Methods: [array of methods to teach]
+Stretch Methods: [array of non-core methods to teach]
+Skills Tested: [array of skills to test if assessment]
+Description: [description of the class, and other details if assessment]
+Teacher notes: [what the student learned, didn't learn, what they should do]
+Teacher notes on homework: [teacher's concerns on homework]
 ```
 
 **Output**: Pure JSON matching this schema:  
@@ -205,14 +195,10 @@ while choice > len(students) or choice < 0:
 
 print(f"Re-optimizing curriculum for {students[choice][0]}... ")
 
+
 cur.execute(
     sql.SQL("""
         SELECT 
-            ( SELECT MAX(class_id) 
-                FROM students_classes  
-                WHERE student_id = {student_id} 
-                AND status IN ('upcoming', 'assessment')
-            ) as last_class,
             s.age,
             s.current_level, 
             s.notes,
@@ -223,8 +209,7 @@ cur.execute(
             sc.skills_tested, 
             sc.description,
             sc.notes,
-            sc.hw_notes,
-            sc.hw
+            sc.hw_notes
         FROM students_classes sc
         JOIN students s ON s.id = sc.student_id
         WHERE sc.student_id = {student_id}
@@ -240,9 +225,9 @@ if len(classes) == 0:
 
 
 message = f"""
-Age: {classes[0][1]}
-Student Level: {classes[0][2]}
-Student Notes: {classes[0][3]}
+Age: {classes[0][0]}
+Student Level: {classes[0][1]}
+Student Notes: {classes[0][2]}
 
 """
 
@@ -250,31 +235,33 @@ for class_ in classes:
     message += f"""
 ===========================
 
-Class Name: {class_[4]}
-Relevance: {class_[5]}
-Methods: {class_[6]}
-Stretch Methods: {class_[7]}
-Skills Tested: {class_[8]}
-Description: {class_[9]}
-Teacher notes: {class_[10]}
-Teacher notes on homework: {class_[11]}
+Class Name: {class_[3]}
+Relevance: {class_[4]}
+Methods: {class_[5]}
+Stretch Methods: {class_[6]}
+Skills Tested: {class_[7]}
+Description: {class_[8]}
+Teacher notes: {class_[9]}
+Teacher notes on homework: {class_[10]}
 
 """
 
-message += f"""
-=========================================
-Last hw assignment: {classes[-1][12]}
-"""
+
+print(message)
 
 last_hw_notes = input("Enter any notes on the last hw: ")
-message += f"Notes on last hw: {last_hw_notes}\n"
+cur.execute(
+    sql.SQL(
+        """UPDATE students_classes
+        SET hw_notes = {last_hw_notes}
+        WHERE student_id = {student_id}
+        AND status IN ('upcoming', 'assessment')
+        RETURNING class_id
+        """).format(student_id=sql.Literal(students[choice][1]), last_hw_notes=sql.Literal(last_hw_notes)))
 
-# TODO: add the last hw notes to database, tell the RAG model to re generate 
-# the latest classes based on how we did the homework, then insert them all
-# after max_id in the database and update future classes
-# they can also update the final goal, current level, whatever as seen fit
+message += f"\n\nLast homework notes: {last_hw_notes}"
 
-message += input("> ")
+last_class = cur.fetchone()[0]
 
 
 chat = client.chats.create(
@@ -304,11 +291,13 @@ cur.execute(
     UPDATE students 
     SET current_level = %s, 
         final_goal = %s, 
-        future_concepts = %s
+        future_concepts = %s,
+        notes = %s
     WHERE id = %s
     """,
     (response.parsed.current_level, response.parsed.final_goal,
-    response.parsed.future_concepts, students[choice][1])
+    response.parsed.future_concepts, response.parsed.notes, 
+     students[choice][1])
 )
 
 cur.execute(
@@ -317,7 +306,7 @@ cur.execute(
     SET hw_notes = %s
     WHERE class_id = %s
     """,
-    (last_hw_notes, classes[0][0])
+    (last_hw_notes, last_class)
 )
 
 cur.execute(
@@ -325,7 +314,8 @@ cur.execute(
     DELETE FROM students_classes
     WHERE student_id = %s
     AND status IN ('upcoming', 'assessment')
-    """
+    """,
+    (students[choice][1],)
 )
 
 execute_values(cur, "INSERT INTO students_classes \
@@ -333,7 +323,7 @@ execute_values(cur, "INSERT INTO students_classes \
             methods, stretch_methods, skills_tested, description)\
             VALUES %s", 
 
-            [(student_id, x.status, x.name, x.relevance, 
+            [(students[choice][1], x.status, x.name, x.relevance, 
             x.methods, x.stretch_methods, x.skills_tested, 
             x.description) for x in response.parsed.classes])
 
