@@ -20,6 +20,8 @@ cur.execute(
         final_goal TEXT NOT NULL,
         future_concepts TEXT[] NOT NULL,
         notes TEXT,
+        last_class_taught INTEGER REFERENCES students_classes(class_id), -- is this allowed
+        -- do i have to
     );
     """
 )
@@ -39,7 +41,12 @@ cur.execute(
 
         -- if status == "assessment"
         skills_tested TEXT[],
-        description TEXT
+        description TEXT,
+
+        classwork TEXT,
+        notes TEXT,
+        hw TEXT,
+        hw_notes TEXT
     );
     """
 )

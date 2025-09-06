@@ -182,6 +182,101 @@ You can include more than two classes in the output; the above is just an exampl
 **Output ONLY valid JSON. No explanations.**  
 """
 
+# connect to the database and upload for a student
+conn = psycopg2.connect(
+    os.getenv("DB_URL")
+)
+
+cur = conn.cursor()
+
+cur.execute("select name, id from students")
+
+students = cur.fetchall()
+
+choice = -1 
+while choice > len(students) or choice < 0:
+    i = 0
+    while i < len(students):
+        print(f"{i}: {students[i][0]}")
+        i += 1
+
+    print("Please choose a student from the list")
+    choice = int(input("> "))
+
+print(f"Re-optimizing curriculum for {students[choice][0]}... ")
+
+cur.execute(
+    sql.SQL("""
+        SELECT 
+            ( SELECT MAX(class_id) 
+                FROM students_classes  
+                WHERE student_id = {student_id} 
+                AND status IN ('upcoming', 'assessment')
+            ) as last_class,
+            s.age,
+            s.current_level, 
+            s.notes,
+            sc.name, 
+            sc.relevance, 
+            sc.methods, 
+            sc.stretch_methods, 
+            sc.skills_tested, 
+            sc.description,
+            sc.notes,
+            sc.hw_notes,
+            sc.hw
+        FROM students_classes sc
+        JOIN students s ON s.id = sc.student_id
+        WHERE sc.student_id = {student_id}
+        ORDER BY sc.class_id ASC
+    """).format(student_id=sql.Literal(students[choice][1]))
+)
+
+classes = cur.fetchall()
+
+if len(classes) == 0:
+    print("No upcoming or assessment classes found")
+    exit()
+
+
+message = f"""
+Age: {classes[0][1]}
+Student Level: {classes[0][2]}
+Student Notes: {classes[0][3]}
+
+"""
+
+for class_ in classes:
+    message += f"""
+===========================
+
+Class Name: {class_[4]}
+Relevance: {class_[5]}
+Methods: {class_[6]}
+Stretch Methods: {class_[7]}
+Skills Tested: {class_[8]}
+Description: {class_[9]}
+Teacher notes: {class_[10]}
+Teacher notes on homework: {class_[11]}
+
+"""
+
+message += f"""
+=========================================
+Last hw assignment: {classes[-1][12]}
+"""
+
+last_hw_notes = input("Enter any notes on the last hw: ")
+message += f"Notes on last hw: {last_hw_notes}\n"
+
+# TODO: add the last hw notes to database, tell the RAG model to re generate 
+# the latest classes based on how we did the homework, then insert them all
+# after max_id in the database and update future classes
+# i guess we can eventually also log what the class used to be? not super necessary tho
+# they can also update the final goal, current level, whatever as seen fit
+# do u wanna store the changes to "current_level"? that might be helpful
+
+
 message = input("> ")
 
 
@@ -196,6 +291,8 @@ chat = client.chats.create(
 
 response = chat.send_message(message)
 print(response.text)
+
+# gotta insert hw notes first, to see how well he did with hw
 
 next = input("(m)odify or (u)pload? ")
 
