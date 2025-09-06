@@ -272,12 +272,9 @@ message += f"Notes on last hw: {last_hw_notes}\n"
 # TODO: add the last hw notes to database, tell the RAG model to re generate 
 # the latest classes based on how we did the homework, then insert them all
 # after max_id in the database and update future classes
-# i guess we can eventually also log what the class used to be? not super necessary tho
 # they can also update the final goal, current level, whatever as seen fit
-# do u wanna store the changes to "current_level"? that might be helpful
 
-
-message = input("> ")
+message += input("> ")
 
 
 chat = client.chats.create(
@@ -292,8 +289,6 @@ chat = client.chats.create(
 response = chat.send_message(message)
 print(response.text)
 
-# gotta insert hw notes first, to see how well he did with hw
-
 next = input("(m)odify or (u)pload? ")
 
 while next == "m":
@@ -303,27 +298,35 @@ while next == "m":
     print(response.text)
     next = input("(m)odify or (u)pload? ")
 
-# connect to the database and upload for a student
-conn = psycopg2.connect(
-    os.getenv("DB_URL")
-)
-
-cur = conn.cursor()
-
-name = input("Name: ")
-age = input("Age: ")
 
 cur.execute(
     """
-    INSERT INTO students (name, age, current_level, final_goal, future_concepts)
-    VALUES (%s, %s, %s, %s, %s)
-    RETURNING id
+    UPDATE students 
+    SET current_level = %s, 
+        final_goal = %s, 
+        future_concepts = %s
+    WHERE id = %s
     """,
-    (name, age, response.parsed.current_level, response.parsed.final_goal,
-    response.parsed.future_concepts)
+    (response.parsed.current_level, response.parsed.final_goal,
+    response.parsed.future_concepts, students[choice][1])
 )
 
-student_id = cur.fetchone()[0]
+cur.execute(
+    """
+    UPDATE students_classes
+    SET hw_notes = %s
+    WHERE class_id = %s
+    """,
+    (last_hw_notes, classes[0][0])
+)
+
+cur.execute(
+    """
+    DELETE FROM students_classes
+    WHERE student_id = %s
+    AND status IN ('upcoming', 'assessment')
+    """
+)
 
 execute_values(cur, "INSERT INTO students_classes \
             (student_id, status, name, relevance, \
