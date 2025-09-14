@@ -18,6 +18,7 @@ client = genai.Client(
     api_key=GEMINI_API_KEY,
 )
 
+
 classnotesgpt_prompt = """
 You are ClassworkGPT (Kid Mode). Teach ONE full class using ONLY the RAG context (age, level, notes, class name, relevance, methods, stretch methods, skills, description). Do not add new topics or assets.
 
@@ -60,6 +61,24 @@ RULES
 - Never assume assets exist; always give concrete create steps if needed.
 - Keep variable names consistent across snippets.
 - Output ONE continuous block and end with the final question.
+-I want you to really make the notes based on the student level. Like if the student has a begineer level, then I want the notes to be simplified to that.
+-What do I mean by this, well look at this shitty ass code right here. 
+
+  **while loop**
+    *   Code: `int c = 0; while (c < 2) { System.out.println(c); c++; }` - YOU PREVIOUSLY GENERATED THIS, MAKE THIS MORE READABLE LIKE SPACE OUT THE LINES
+    *   Metaphor: Run laps until you are too tired. - THIS METAPHOR KINDA SUCKS. MAKE IT MORE RELATABLE TO THE OVERALL CONTENT
+    *   Result: Shows `0`, then `1`.
+    *   Why: Repeats game turns.
+
+
+
+-This code right here is extremly confusing for a begineer student and this is what u previously generated. I wanna beat u up for this, make it more readable, lines of code neater, and understanable for the user depending on its! What i mean by this is w
+
+
+-If the student is more advanced, then make the notes more brief and have him explore his thinki
+
+
+
 
 Now generate a single, kid-friendly, descriptive response using ONLY the provided RAG context.
 
