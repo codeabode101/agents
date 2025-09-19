@@ -1,0 +1,40 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*'
+    workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: codeabode
+            asset_name: linux-amd64
+          - os: windows-latest
+            artifact_name: codeabode.exe
+            asset_name: windows-amd64
+          - os: macos-latest
+            artifact_name: codeabode
+            asset_name: macos-arm64
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install -r requirements.txt
+        venv/bin/pyinstaller codeabode.py
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: dist/codeabode/${{ matrix.artifact_name }}
+        asset_name: ${{ matrix.asset_name }}
+        tag: ${{ github.ref }}
