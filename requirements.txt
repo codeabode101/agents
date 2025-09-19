@@ -132,6 +132,7 @@ propcache==0.2.1
 proto-plus==1.25.0
 protobuf==5.29.1
 psutil==6.1.0
+psycopg2==2.9.10
 psycopg2-binary==2.9.10
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
@@ -163,6 +164,7 @@ rsa==4.9
 safetensors==0.4.5
 selenium==4.34.2
 selenium-wire==5.1.0
+setuptools=80.9.0
 shellingham==1.5.4
 six==1.17.0
 sixelcrop==0.1.9
