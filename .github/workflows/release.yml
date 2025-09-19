@@ -29,6 +29,8 @@ jobs:
       run: |
         python3 -m venv venv
         . venv/bin/activate
+        pip install setuptools
+        pip install --upgrade setuptools
         pip install -r requirements.txt
         venv/bin/pyinstaller codeabode.py
     - name: Upload binaries to release
