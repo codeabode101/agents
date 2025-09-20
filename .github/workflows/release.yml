@@ -28,7 +28,7 @@ jobs:
     - name: Build
       run: |
         python3 -m venv venv
-        if [ "$RUNNER_OS" == "Windows" ]; then
+        if [[ "$RUNNER_OS" == "Windows" ]]; then
           venv\Scripts\activate
         else
           source venv/bin/activate
