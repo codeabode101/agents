@@ -35,7 +35,7 @@ jobs:
         pip install setuptools
         pip install --upgrade setuptools
         pip install -r newreqs.txt
-        venv/bin/pyinstaller codeabode.py
+        venv/bin/pyinstaller -F codeabode.py
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
       with:
