@@ -28,7 +28,11 @@ jobs:
     - name: Build
       run: |
         python3 -m venv venv
-        . venv/bin/activate
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          venv\Scripts\activate
+        else
+          source venv/bin/activate
+        fi
         pip install setuptools
         pip install --upgrade setuptools
         pip install -r newreqs.txt
