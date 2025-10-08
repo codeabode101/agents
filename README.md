@@ -37,6 +37,8 @@ You can also use `pyinstaller` from within the venv if you want to make a contai
 
 ## Usage
 
+### Python file
+
 ```sh
 (venv) ➜  agents git:(main) ✗ ./codeabode.py                                                  
 Usage: ./codeabode.py [COMMAND]
@@ -58,22 +60,44 @@ First you want to create a postgresql database and provide the URL in the `.env`
 
 To create your first curriculum, run the following command with no args:
 ```sh
-./codeabode curriculum
+./codeabode.py curriculum
 ```
 
 After you generate a curriculum, you must generate class work (what a student reads during each class and you can decide how to answer their questions)
 
 ```sh
-./codeabode classwork
+./codeabode.py classwork
 ```
 
 Then you generate homework. You will be asked for "notes", which basically represent how well the student learned and what they actually learned. If they haven't learned something, it won't be in the homework and will be taught next class.
 
 ```sh
-./codeabode homework
+./codeabode.py homework
 ```
 Now you refine the curriculum based on how well they did in the homework, and so the cycle continues
 
 ```sh
-./codeabode refiner
+./codeabode.py refiner
 ```
+
+### Compiled executable
+
+From the releases page, find an executable that works for your OS and download it in the format `os-arch`, like `macos-arm64` or `linux-amd64` for MacOS and Linux, respectively.
+
+The subcommands are the same as for the Python file version. To demonstrate this, look at the `help` subcommand below:
+
+```sh
+➜  Desktop ./macos-arm64 help
+Usage: ./codeabode.py [COMMAND]
+
+Commands:
+    init, i - initialize the database
+    curriculum, c - generate a curriculum
+    classwork, w - generate a classwork
+    homework, hw, h - generate a homework
+    refiner, refine, r - refine a curriculum
+
+➜  Desktop
+```
+
+You still need a `.env` with `GEMINI_API_KEY` and `DB_URL`.
