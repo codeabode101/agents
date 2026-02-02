@@ -4,6 +4,8 @@ Use these agents to make curriculums, classwork, homework, and refine the curric
 In your `.env`, include a PostgreSQL database url in the `DB_URL` variable.
 You will also need a Gemini API Key. Please store that in the `GEMINI_API_KEY` variable.
 
+Please make the database and set up the backend using the [codeabode backend](https://github.com/codeabode101/webapp)
+
 ## Install 
 
 You can use the release build provided, or:
@@ -37,14 +39,11 @@ You can also use `pyinstaller` from within the venv if you want to make a contai
 
 ## Usage
 
-### Python file
-
 ```sh
 (venv) ➜  agents git:(main) ✗ ./codeabode.py                                                  
 Usage: ./codeabode.py [COMMAND]
 
 Commands:
-    init, i - initialize the database
     curriculum, c - generate a curriculum
     classwork, w - generate a classwork
     homework, hw, h - generate a homework
@@ -54,50 +53,9 @@ Commands:
 All commands are interactive.
 
 First you want to create a postgresql database and provide the URL in the `.env` file. You can then run
-```sh
-./codeabode.py init
-```
 
 To create your first curriculum, run the following command with no args:
-```sh
-./codeabode.py curriculum
-```
-
-After you generate a curriculum, you must generate class work (what a student reads during each class and you can decide how to answer their questions)
 
 ```sh
-./codeabode.py classwork
+./codeabode curriculum
 ```
-
-Then you generate homework. You will be asked for "notes", which basically represent how well the student learned and what they actually learned. If they haven't learned something, it won't be in the homework and will be taught next class.
-
-```sh
-./codeabode.py homework
-```
-Now you refine the curriculum based on how well they did in the homework, and so the cycle continues
-
-```sh
-./codeabode.py refiner
-```
-
-### Compiled executable
-
-From the releases page, find an executable that works for your OS and download it in the format `os-arch`, like `macos-arm64` or `linux-amd64` for MacOS and Linux, respectively.
-
-The subcommands are the same as for the Python file version. To demonstrate this, look at the `help` subcommand below:
-
-```sh
-➜  Desktop ./macos-arm64 help
-Usage: ./codeabode.py [COMMAND]
-
-Commands:
-    init, i - initialize the database
-    curriculum, c - generate a curriculum
-    classwork, w - generate a classwork
-    homework, hw, h - generate a homework
-    refiner, refine, r - refine a curriculum
-
-➜  Desktop
-```
-
-You still need a `.env` with `GEMINI_API_KEY` and `DB_URL`.

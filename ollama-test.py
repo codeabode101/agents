@@ -1,0 +1,21 @@
+from ollama import chat
+from ollama import ChatResponse
+
+# response: ChatResponse = chat(model='deepseek-r1', messages=[
+#   {
+#     'role': 'user',
+#     'content': 'Why is the sky blue?',
+#   },
+# ])
+# print(response['message']['content'])
+# # or access fields directly from the response object
+# print(response.message.content)
+
+stream = chat(
+        model='deepseek-r1:8b',
+    messages=[{'role': 'user', 'content': 'Why is the sky blue?'}],
+    stream=True,
+)
+
+for chunk in stream:
+  print(chunk['message']['content'], end='', flush=True)
