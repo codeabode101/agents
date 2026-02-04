@@ -698,7 +698,7 @@ elif argv[1] in ["continue", "cont", "c"]:
                     msg = MIMEMultipart()
                     msg['From'] = f"Codeabode <{email}>"
                     msg['To'] = f"{account[0]} <{account[1]}>"
-                    msg['Subject'] = "Assignment Uploaded for {current_class[10]}"
+                    msg['Subject'] = f"Assignment Uploaded for {current_class[10]}"
                     
                     # Create the email body
                     body = f"""
