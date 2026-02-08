@@ -395,7 +395,8 @@ elif argv[1] in ["continue", "cont", "c"]:
         cur.execute(
             """
             UPDATE students_classes
-            SET hw_notes = %s
+            SET hw_notes = %s,
+            status = 'completed'
             WHERE class_id = %s
             """,
             (last_hw_notes, last_class)
@@ -510,7 +511,7 @@ elif argv[1] in ["continue", "cont", "c"]:
                     Teacher notes:
                     {input("> ")}
                     """
-                )
+                ).text
                 prompt = classnotesgpt_prompt
 
             else:
@@ -536,7 +537,7 @@ elif argv[1] in ["continue", "cont", "c"]:
                 status = 'completed'
                 WHERE class_id = %s
                 """,
-                (response.text, current_class_num)
+                (response, current_class_num)
             )
 
         cur.execute(
